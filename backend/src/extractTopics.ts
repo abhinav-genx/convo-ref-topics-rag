@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { askClaudeOpus } from "./openrouter.js";
+import { parseModelJson } from "./parseModelJson.js";
 
 export const MIN_TOPICS_PER_BLOCK = 9;
 
@@ -52,12 +53,11 @@ Return JSON only, no markdown:
 }
 
 function parseJson(raw: string): unknown {
-  const trimmed = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-  try {
-    return JSON.parse(trimmed);
-  } catch {
+  const parsed = parseModelJson(raw);
+  if (parsed == null) {
     throw new Error("Could not parse topics JSON");
   }
+  return parsed;
 }
 
 function topicKey(raw: string): string {

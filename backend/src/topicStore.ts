@@ -52,12 +52,19 @@ export function mergeTopicSummaries(updates: Record<string, string>): Record<str
 export function knownTopicNames(exceptFile?: string): string[] {
   const seen = new Set<string>();
   const names: string[] = [];
+  const add = (topic: string) => {
+    if (!topic || seen.has(topic)) return;
+    seen.add(topic);
+    names.push(topic);
+  };
   for (const block of topicStore) {
     if (exceptFile && block.file_name === exceptFile) continue;
-    for (const topic of block.topics) {
-      if (seen.has(topic)) continue;
-      seen.add(topic);
-      names.push(topic);
+    for (const topic of block.topics) add(topic);
+  }
+  for (const file of knowledgeStore) {
+    if (exceptFile && file.file_name === exceptFile) continue;
+    for (const chunk of file.knowledge) {
+      for (const topic of Object.keys(chunk.topics)) add(topic);
     }
   }
   return names;
@@ -72,6 +79,7 @@ export function upsertFileTopics(fileName: string, blocks: TopicBlock[]): TopicB
 export function uniqueTopicCatalog(
   blocks: TopicBlock[] = topicStore,
   summaries: Record<string, string> = topicSummaries,
+  refs: ReferenceKnowledge[] = knowledgeStore,
 ): Record<string, string> {
   const catalog: Record<string, string> = {};
   for (const block of blocks) {
@@ -87,6 +95,18 @@ export function uniqueTopicCatalog(
       }
       if (detail && !catalog[topic].includes(detail)) {
         catalog[topic] = `${catalog[topic]} | ${detail}`;
+      }
+    }
+  }
+  for (const file of refs) {
+    for (const chunk of file.knowledge) {
+      for (const [topic, snippets] of Object.entries(chunk.topics)) {
+        if (summaries[topic]) {
+          catalog[topic] = summaries[topic];
+          continue;
+        }
+        const preview = snippets.filter(Boolean).slice(0, 2).join(" ");
+        if (preview && !catalog[topic]) catalog[topic] = preview;
       }
     }
   }

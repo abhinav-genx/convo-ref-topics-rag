@@ -1,4 +1,5 @@
 import type { ReferenceKnowledge } from "./extractReference.js";
+import { parseModelJson } from "./parseModelJson.js";
 import type { TopicBlock } from "./extractTopics.js";
 import { askClaudeOpus, type ConversationMessage } from "./openrouter.js";
 import {
@@ -19,12 +20,7 @@ type DocumentContext = {
 };
 
 function parseJson(raw: string): unknown {
-  const trimmed = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    return null;
-  }
+  return parseModelJson(raw);
 }
 
 function pickTopicKeys(raw: string, catalog: Record<string, string>): string[] {
@@ -63,7 +59,7 @@ async function selectTopics(
         role: "system",
         content: `You only pick topic keys for RAG. Do not answer the question yet.
 
-Each topic name appears once with a running summary of everything known on that topic so far. Pick every key whose summary matches the user question. You may pick several. Do not invent keys. Do not ignore a key just because the name is generic (for example compliance or drug_screen) if the summary mentions the asked subject.
+Each topic name appears once with a running summary of everything known on that topic so far. Pick every key whose name or summary matches the user question. You may pick several. Do not invent keys. Do not ignore a key just because the name is generic (for example compliance or drug_screen) if the summary mentions the asked subject. Policy docs, program catalogs, and numbered lists often live under their own keys (effective_intervention, grievance, internal_programming) — pick those when the question is about that document.
 
 What happens next: the system will load those summaries plus every matching transcript slice AND reference knowledge for those keys.
 
@@ -132,7 +128,7 @@ export async function completeChat(
       : documents
           .map((d) => d.knowledge)
           .filter((item): item is ReferenceKnowledge => Boolean(item));
-  const catalog = uniqueTopicCatalog(blocks, summaries);
+  const catalog = uniqueTopicCatalog(blocks, summaries, refs);
   const selected = await selectTopics(lastUser, catalog);
   const retrieved = retrieveByTopics(selected, blocks);
   const referenceHits = retrieveReferenceKnowledge(selected, refs);
