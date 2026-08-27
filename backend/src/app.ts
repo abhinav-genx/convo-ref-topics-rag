@@ -158,7 +158,9 @@ app.post("/api/upload", upload.single("file"), handleUpload);
 
 async function handleChat(req: express.Request, res: express.Response) {
   try {
-    const messages = req.body?.messages as ChatMessage[] | undefined;
+    const conversation = (
+      Array.isArray(req.body?.conversation) ? req.body.conversation : req.body?.messages
+    ) as ChatMessage[] | undefined;
     const documents = (req.body?.documents ?? []) as {
       name: string;
       text: string;
@@ -171,13 +173,13 @@ async function handleChat(req: express.Request, res: express.Response) {
       };
     }[];
 
-    if (!Array.isArray(messages) || messages.length === 0) {
-      res.status(400).json({ error: "Body must include a non-empty messages array." });
+    if (!Array.isArray(conversation) || conversation.length === 0) {
+      res.status(400).json({ error: "Body must include a non-empty conversation array." });
       return;
     }
 
     const reply = await completeChat(
-      messages,
+      conversation,
       Array.isArray(documents) ? documents : [],
       getTopicStore(),
       getKnowledgeStore(),

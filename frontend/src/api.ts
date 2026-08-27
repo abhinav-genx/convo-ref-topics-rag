@@ -91,13 +91,13 @@ export async function fetchKnowledge(): Promise<KnowledgeBrowseIndex> {
 }
 
 export async function sendChat(
-  messages: { role: "user" | "assistant"; content: string }[],
+  conversation: { role: "user" | "assistant"; content: string }[],
   documents: ChatDocument[],
 ): Promise<string> {
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, documents }),
+    body: JSON.stringify({ conversation, messages: conversation, documents }),
   });
 
   const data = await res.json();

@@ -83,9 +83,8 @@ export default function App() {
     setBusy("chat");
 
     try {
-      const reply = await sendChat(
-        nextMessages.map((m) => ({ role: m.role, content: m.content })),
-        [
+      const conversation = nextMessages.map((m) => ({ role: m.role, content: m.content }));
+      const reply = await sendChat(conversation, [
           ...transcriptFiles.map((a) => ({
             name: a.name,
             text: a.text,
@@ -153,32 +152,12 @@ export default function App() {
         topics: result.topics,
         knowledge: result.knowledge,
       };
-      const kindLabel = fileKind === "transcript" ? "transcript file" : "reference document";
-      const topicSummary =
-        (result.topic_store ?? result.topics)
-          ?.map((block) => {
-            const names = block.topics.join(", ");
-            return `${block.file_name} ${block.id}: ${block.topics.length} topics (${names})`;
-          })
-          .join("\n") ?? "";
-      const knowledgeJson = JSON.stringify(result.knowledge ?? { file_name: result.filename, knowledge: [] }, null, 2);
-      const notice: Message = {
-        id: uid(),
-        role: "assistant",
-        content: result.text
-          ? fileKind === "transcript"
-            ? `Uploaded ${kindLabel}: ${result.filename} (${result.dialogues?.length ?? 0} dialogues).\n\nRAG store now has ${result.topic_store?.length ?? result.topics?.length ?? 0} blocks across transcript files:\n${topicSummary || "(none)"}`
-            : `Uploaded ${kindLabel}: ${result.filename} (${result.pages} page(s), ${result.charCount} chars).\nIndexed independently (new topics allowed; existing keys reused only when the subject matches).\n\n${knowledgeJson}`
-          : `OCR ran on ${result.filename} but no text was found.`,
-        createdAt: Date.now(),
-      };
 
       if (fileKind === "transcript") {
         setTranscriptFiles((prev) => [...prev.filter((a) => a.name !== attachment.name), attachment]);
       } else {
         setReferenceDocuments((prev) => [...prev.filter((a) => a.name !== attachment.name), attachment]);
       }
-      setMessages((prev) => [...prev, notice]);
       await refreshKnowledge();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to extract text");
@@ -195,9 +174,7 @@ export default function App() {
           <span>Doc Chat</span>
           <span>
             {busy === "ocr"
-              ? fileKind === "transcript"
-                ? "Reading PDF + topics..."
-                : "Matching reference knowledge..."
+              ? "Uploading..."
               : busy === "chat"
                 ? "Working..."
                 : "Ready"}
@@ -243,11 +220,7 @@ export default function App() {
               {busy === "ocr" && (
                 <div className="msg">
                   <b>Bot:</b>
-                  <pre>
-                    {fileKind === "transcript"
-                      ? "Reading PDF and extracting topics..."
-                      : "Reading reference PDF and extracting its own topics..."}
-                  </pre>
+                  <pre>Uploading PDF...</pre>
                 </div>
               )}
               {busy === "chat" && (

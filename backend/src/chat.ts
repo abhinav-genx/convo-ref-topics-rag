@@ -48,16 +48,19 @@ function pickTopicKeys(raw: string, catalog: Record<string, string>): string[] {
 async function selectTopics(
   question: string,
   catalog: Record<string, string>,
+  conversation: ChatMessage[],
 ): Promise<string[]> {
   const keys = Object.keys(catalog);
   if (!keys.length) return [];
 
   const raw = await askClaudeOpus(
-    `User question:\n${question}\n\nChoose which topic keys to retrieve. Return JSON only: {"topics":["economy","investing"]}`,
+    `Latest user question:\n${question}\n\nConversation so far:\n${JSON.stringify(conversation)}\n\nChoose which topic keys to retrieve. Return JSON only: {"topics":["economy","investing"]}`,
     [
       {
         role: "system",
         content: `You only pick topic keys for RAG. Do not answer the question yet.
+
+Use the full conversation, not only the last line, so follow-ups still retrieve the right topics.
 
 Each topic name appears once with a running summary. Topics come independently from transcripts and from reference documents; a key may exist in only one source. Pick every key whose name or summary matches the user question. You may pick several. Do not invent keys. Do not skip a reference-only key (for example grievance, effective_intervention, internal_programming) when the question is about that document.
 
@@ -129,7 +132,7 @@ export async function completeChat(
           .map((d) => d.knowledge)
           .filter((item): item is ReferenceKnowledge => Boolean(item));
   const catalog = uniqueTopicCatalog(blocks, summaries, refs);
-  const selected = await selectTopics(lastUser, catalog);
+  const selected = await selectTopics(lastUser, catalog, history);
   const retrieved = retrieveByTopics(selected, blocks);
   const referenceHits = retrieveReferenceKnowledge(selected, refs);
 
@@ -137,15 +140,12 @@ export async function completeChat(
 
 The user question was matched to unique topic names from transcripts and reference documents (each source can have its own topics). Each name has a running summary. Those names were used to pull matching transcript slices and reference knowledge from the whole database.
 
-Selected topics: ${selected.join(", ") || "(none)"}
-Topic summaries:
-${JSON.stringify(Object.fromEntries(selected.map((topic) => [topic, summaries[topic] ?? catalog[topic] ?? ""])))}
+Stay inside the retrieved set. If it is not enough, say so. Use the conversation for follow-ups (pronouns, "that", "the deadline"). Do not list topic keys unless the user asks.
+
 Retrieved transcript knowledge:
 ${retrieved.length ? retrievedContext(retrieved, selected, summaries) : "(no transcript slices)"}
 Retrieved reference knowledge:
-${referenceHits.length ? JSON.stringify(referenceHits) : "(no reference knowledge)"}
-
-Stay inside this retrieved set. If it is not enough, say so.`;
+${referenceHits.length ? JSON.stringify(referenceHits) : "(no reference knowledge)"}`;
 
   const prior = history.slice(0, -1);
   return askClaudeOpus(lastUser, [{ role: "system", content: system }, ...prior]);
