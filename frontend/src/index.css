@@ -137,6 +137,10 @@ input:disabled {
   border-bottom: 1px solid #808080;
 }
 
+.tabs .new-chat {
+  margin-left: auto;
+}
+
 .tab {
   background: #c0c0c0;
   border: 2px solid;

@@ -116,7 +116,13 @@ export default function App() {
     }
   }
 
-  function onBrowse() {
+  function onNewChat() {
+    if (busy) return;
+    setMessages([]);
+    setDraft("");
+    setError(null);
+    setTab("chat");
+  }
     if (!fileKind) {
       setError("Select Transcript file or Reference document first.");
       return;
@@ -199,6 +205,14 @@ export default function App() {
           >
             Knowledge
           </button>
+          <button
+            type="button"
+            className="tab new-chat"
+            disabled={busy !== null}
+            onClick={onNewChat}
+          >
+            New chat
+          </button>
         </div>
 
         {tab === "chat" ? (
@@ -207,8 +221,6 @@ export default function App() {
               {messages.length === 0 && !busy && (
                 <p className="empty">
                   Upload a PDF, then type a message and press Send.
-                  <br />
-                  Reload the page to start a new chat.
                 </p>
               )}
               {messages.map((message) => (
@@ -290,6 +302,9 @@ export default function App() {
             onChange={(e) => setDraft(e.target.value)}
           />
           <div className="send-row">
+            <button type="button" disabled={busy !== null} onClick={onNewChat}>
+              New chat
+            </button>
             <button type="submit" disabled={busy !== null || !draft.trim()}>
               Send
             </button>
