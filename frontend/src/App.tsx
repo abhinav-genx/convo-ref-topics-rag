@@ -123,6 +123,8 @@ export default function App() {
     setError(null);
     setTab("chat");
   }
+
+  function onBrowse() {
     if (!fileKind) {
       setError("Select Transcript file or Reference document first.");
       return;
