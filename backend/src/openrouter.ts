@@ -1,3 +1,5 @@
+import { FRONTEND_URL } from "./env.js";
+
 export type ConversationMessage = {
   role: "user" | "assistant" | "system";
   content: string;
@@ -28,7 +30,7 @@ export async function askClaudeOpus(
     headers: {
       Authorization: `Bearer ${apiKey()}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": process.env.OPENROUTER_REFERER ?? "http://localhost:5173",
+      "HTTP-Referer": process.env.OPENROUTER_REFERER?.replace(/\/$/, "") || FRONTEND_URL,
       "X-Title": process.env.OPENROUTER_TITLE ?? "Doc Chat",
     },
     body: JSON.stringify({

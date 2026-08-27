@@ -1,6 +1,12 @@
 import type { KnowledgeBrowseIndex } from "./types";
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+const API_BASE = String(import.meta.env.VITE_API_URL || import.meta.env.BACKEND_URL)
+  .trim()
+  .replace(/\/$/, "");
+
+if (!API_BASE) {
+  throw new Error("VITE_API_URL or BACKEND_URL must be set");
+}
 
 export type UploadResult = {
   filename: string;
