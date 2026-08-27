@@ -1,3 +1,5 @@
+import type { KnowledgeBrowseIndex } from "./types";
+
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 
 export type UploadResult = {
@@ -6,29 +8,62 @@ export type UploadResult = {
   size: number;
   method: string;
   pages: number;
-  kind: "conversation" | "reference";
+  kind: "transcript" | "reference";
   text: string;
   charCount: number;
   dialogues?: string[];
-  topics?: { name: string; summary: string }[];
+  topics?: {
+    file_name: string;
+    id: string;
+    dialogues: string[];
+    topics: string[];
+    topic_details: Record<string, string>;
+  }[];
+  topic_store?: {
+    file_name: string;
+    id: string;
+    dialogues: string[];
+    topics: string[];
+    topic_details: Record<string, string>;
+  }[];
+  topic_summaries?: Record<string, string>;
+  knowledge?: {
+    file_name: string;
+    knowledge: { topics: Record<string, string[]> }[];
+  };
+  knowledge_store?: {
+    file_name: string;
+    knowledge: { topics: Record<string, string[]> }[];
+  }[];
 };
 
 export type ChatDocument = {
   name: string;
   text: string;
-  kind: "conversation" | "reference";
+  kind: "transcript" | "reference";
   dialogues?: string[];
+  topics?: {
+    file_name: string;
+    id: string;
+    dialogues: string[];
+    topics: string[];
+    topic_details: Record<string, string>;
+  }[];
+  knowledge?: {
+    file_name: string;
+    knowledge: { topics: Record<string, string[]> }[];
+  };
 };
 
 export async function uploadFile(
   file: File,
-  kind: "conversation" | "reference",
+  kind: "transcript" | "reference",
 ): Promise<UploadResult> {
   const body = new FormData();
-  body.append("file", file);
   body.append("kind", kind);
+  body.append("file", file);
 
-  const res = await fetch(`${API_BASE}/api/upload`, {
+  const res = await fetch(`${API_BASE}/api/upload?kind=${encodeURIComponent(kind)}`, {
     method: "POST",
     body,
   });
@@ -38,6 +73,15 @@ export async function uploadFile(
     throw new Error(data.error || "Upload failed");
   }
   return data as UploadResult;
+}
+
+export async function fetchKnowledge(): Promise<KnowledgeBrowseIndex> {
+  const res = await fetch(`${API_BASE}/api/knowledge`);
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to load knowledge");
+  }
+  return data as KnowledgeBrowseIndex;
 }
 
 export async function sendChat(

@@ -122,28 +122,102 @@ input:disabled {
   padding: 0 8px 6px;
 }
 
-.files {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  padding: 0 8px 8px;
-}
-
-.file-box {
-  min-height: 52px;
-}
-
-.file-box ul {
-  margin: 0;
-  padding: 4px 4px 4px 20px;
-}
-
 .composer {
   padding: 8px;
   display: flex;
   flex-direction: column;
   gap: 6px;
   border-top: 1px solid #808080;
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 8px 8px 0;
+  border-bottom: 1px solid #808080;
+}
+
+.tab {
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #fff #808080 #c0c0c0 #fff;
+  padding: 3px 14px 4px;
+  margin-bottom: -1px;
+  cursor: pointer;
+}
+
+.tab.active {
+  border-color: #fff #404040 #c0c0c0 #fff;
+  padding-bottom: 6px;
+  font-weight: bold;
+}
+
+.knowledge {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(140px, 0.9fr) minmax(180px, 1fr) minmax(220px, 1.4fr);
+  grid-template-rows: auto 1fr;
+  gap: 8px;
+}
+
+.knowledge-summary {
+  grid-column: 1 / -1;
+  max-height: 96px;
+  padding: 6px 8px;
+}
+
+.knowledge-summary p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.knowledge-col {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.knowledge-list,
+.knowledge-detail {
+  flex: 1;
+  min-height: 0;
+}
+
+.knowledge-list button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+
+.knowledge-list button.selected {
+  background: #000080;
+  color: #fff;
+}
+
+.knowledge-list .count {
+  color: inherit;
+  opacity: 0.8;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.knowledge-detail ul {
+  margin: 0;
+  padding: 8px 8px 8px 22px;
+}
+
+.knowledge-detail li {
+  margin: 0 0 8px;
 }
 
 .row {

@@ -34,6 +34,7 @@ export async function askClaudeOpus(
     body: JSON.stringify({
       model: MODEL,
       messages,
+      max_tokens: 4096,
     }),
   });
 
