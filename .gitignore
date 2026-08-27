@@ -1,0 +1,29 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# dependencies
+node_modules
+
+# build
+dist
+dist-ssr
+*.tsbuildinfo
+
+# uploads / local data
+backend/uploads
+*.log
+logs
+
+# os / editor
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
+*.sw?
+
+# tesseract / caches
+.tessdata
+*.traineddata
+.cache
