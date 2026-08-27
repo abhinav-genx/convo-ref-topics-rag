@@ -15,7 +15,7 @@ cd .. && npm install && npm run dev
 Set the repo-root `.env` (Vite reads it at build time):
 
 ```
-FRONTEND_URL=https://frontend-3jr6cblmp-raj-7a2b.vercel.app
+FRONTEND_URL=https://frontend-pink-theta-v6v2fhe4eo.vercel.app
 BACKEND_URL=https://backend-eosin-alpha-29.vercel.app
 VITE_API_URL=https://backend-eosin-alpha-29.vercel.app
 ```

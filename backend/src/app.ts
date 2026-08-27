@@ -2,8 +2,8 @@ import cors from "cors";
 import express from "express";
 import multer from "multer";
 import { completeChat, type ChatMessage } from "./chat.js";
+import { isAllowedOrigin } from "./corsOrigins.js";
 import { splitDialogues } from "./dialogues.js";
-import { FRONTEND_URL } from "./env.js";
 import { extractReferenceKnowledge } from "./extractReference.js";
 import { extractTopics, type TopicBlock } from "./extractTopics.js";
 import { extractText, isPdfFile } from "./extractDocument.js";
@@ -33,7 +33,13 @@ const app = express();
 
 app.use(
   cors({
-    origin: FRONTEND_URL,
+    origin(origin, callback) {
+      if (!origin || isAllowedOrigin(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(null, false);
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
