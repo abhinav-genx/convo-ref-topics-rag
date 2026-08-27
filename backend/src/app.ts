@@ -112,8 +112,8 @@ async function handleUpload(req: express.Request, res: express.Response) {
         ? await extractReferenceKnowledge(
             result.text,
             file.originalname,
-            knownTopicNames(),
-            getTopicSummaries(),
+            knownTopicNames(file.originalname),
+            topicSummariesExcept(file.originalname),
           )
         : undefined;
 

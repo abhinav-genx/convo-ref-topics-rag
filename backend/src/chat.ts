@@ -59,7 +59,7 @@ async function selectTopics(
         role: "system",
         content: `You only pick topic keys for RAG. Do not answer the question yet.
 
-Each topic name appears once with a running summary of everything known on that topic so far. Pick every key whose name or summary matches the user question. You may pick several. Do not invent keys. Do not ignore a key just because the name is generic (for example compliance or drug_screen) if the summary mentions the asked subject. Policy docs, program catalogs, and numbered lists often live under their own keys (effective_intervention, grievance, internal_programming) — pick those when the question is about that document.
+Each topic name appears once with a running summary. Topics come independently from transcripts and from reference documents; a key may exist in only one source. Pick every key whose name or summary matches the user question. You may pick several. Do not invent keys. Do not skip a reference-only key (for example grievance, effective_intervention, internal_programming) when the question is about that document.
 
 What happens next: the system will load those summaries plus every matching transcript slice AND reference knowledge for those keys.
 
@@ -135,7 +135,7 @@ export async function completeChat(
 
   const system = `You answer using retrieved RAG knowledge only.
 
-The user question was matched to unique topic names. Each name has a running summary. Those names were used to pull matching transcript slices and reference knowledge from the whole database.
+The user question was matched to unique topic names from transcripts and reference documents (each source can have its own topics). Each name has a running summary. Those names were used to pull matching transcript slices and reference knowledge from the whole database.
 
 Selected topics: ${selected.join(", ") || "(none)"}
 Topic summaries:

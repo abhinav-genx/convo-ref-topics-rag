@@ -1,5 +1,6 @@
 import { askClaudeOpus } from "./openrouter.js";
 import { parseModelJson } from "./parseModelJson.js";
+import { reuseCatalogPrompt, TOPIC_KEY_RULES, topicKey } from "./topicIndex.js";
 
 export const REFERENCE_CHUNK_SIZE = 10_000;
 
@@ -18,14 +19,6 @@ function parseJson(raw: string): unknown {
     throw new Error("Could not parse reference knowledge JSON");
   }
   return parsed;
-}
-
-function topicKey(raw: string): string {
-  return raw
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
 }
 
 export function chunkText(text: string, size = REFERENCE_CHUNK_SIZE): string[] {
@@ -73,28 +66,30 @@ async function extractChunk(
   existingTopics: string[],
   summaries: Record<string, string>,
 ): Promise<{ topics: Record<string, string[]>; summaries: Record<string, string> }> {
-  const reuse = existingTopics.length
-    ? `Existing topic keys. Reuse the exact key when the subject is the same (not a synonym):\n${existingTopics.join(", ")}`
-    : "No topic keys exist yet. Create short underscore keys for the subjects in this slice.";
+  const reuse = reuseCatalogPrompt(existingTopics);
+  const summaryBlock = Object.keys(summaries).length
+    ? `Current running summaries. When you reuse or create a key, return a 2–4 sentence summary that keeps earlier facts and adds what this slice contributes.\n${JSON.stringify(summaries)}`
+    : "No running summaries yet. topic_summaries starts as a 2–4 sentence overview of each new key.";
 
   const raw = await askClaudeOpus(
-    `${reuse}\n\nCurrent topic summaries:\n${JSON.stringify(summaries)}\n\nReference slice (max ${REFERENCE_CHUNK_SIZE} characters):\n${chunk}`,
+    `${reuse}\n\n${summaryBlock}\n\nReference slice (max ${REFERENCE_CHUNK_SIZE} characters):\n${chunk}`,
     [
       {
         role: "system",
-        content: `You index a reference-document slice for RAG.
+        content: `You index a reference document for RAG. This document is a first-class topic source, equal to transcripts.
+
+${TOPIC_KEY_RULES}
 
 What you are doing:
-- ${reuse}
-- If this slice is a distinct subject that is not in the existing keys, CREATE a new short lowercase underscore key.
-  Examples: effective_intervention, grievance, internal_programming.
-- Do not force unrelated facts onto an existing key. A program catalog is not substance_evaluation. NIC principles are not check_in.
-- Extract ALL useful facts in this slice: named programs, numbered lists, deadlines, procedures, definitions. Do not drop an item because it is missing from the existing key list.
-- If you add facts for a topic, also return an UPDATED running summary for that topic (2–4 sentences) that keeps earlier summary content and adds what this slice contributes.
+- Read only this slice.
+- Extract EVERY distinct subject in the slice as its own topic key, even if no transcript has that topic.
+- Named programs, numbered lists, deadlines, procedures, and definitions each belong under the topic they are about. Keep all of them.
+- If this slice is a program catalog, use a key such as internal_programming and list every program (T4G, MRT, Thinking for Good, etc.).
+- If this slice is a policy that transcripts never mentioned, still create keys (grievance, appeal, effective_intervention, …).
 
 What this is stored as:
-{ "file_name": "...", "knowledge": [{ "topics": { "health": ["facts from this file"] } }] }
-Running topic_summaries are stored once per topic and passed into later extraction and RAG.
+{ "file_name": "...", "knowledge": [{ "topics": { "grievance": ["facts from this file"] } }] }
+Running topic_summaries are stored once per topic and used later for RAG.
 
 If nothing in this slice is useful, return {"topics":{},"topic_summaries":{}}.
 Return JSON only:
@@ -127,12 +122,14 @@ export async function extractReferenceKnowledge(
   existingTopics: string[],
   existingSummaries: Record<string, string> = {},
 ): Promise<ReferenceKnowledge & { summaries: Record<string, string> }> {
+  const known = [...existingTopics];
   const merged: Record<string, string[]> = {};
   const summaries = { ...existingSummaries };
   for (const chunk of chunkText(text)) {
-    const { topics, summaries: updates } = await extractChunk(chunk, existingTopics, summaries);
+    const { topics, summaries: updates } = await extractChunk(chunk, known, summaries);
     for (const [topic, snippets] of Object.entries(topics)) {
       if (!merged[topic]) merged[topic] = [];
+      if (!known.includes(topic)) known.push(topic);
       for (const snippet of snippets) {
         if (!merged[topic].includes(snippet)) merged[topic].push(snippet);
       }

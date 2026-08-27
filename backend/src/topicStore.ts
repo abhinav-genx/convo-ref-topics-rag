@@ -15,11 +15,7 @@ export function getTopicSummaries(): Record<string, string> {
 
 export function topicSummariesExcept(fileName?: string): Record<string, string> {
   if (!fileName) return { ...topicSummaries };
-  const kept = new Set<string>();
-  for (const block of topicStore) {
-    if (block.file_name === fileName) continue;
-    for (const topic of block.topics) kept.add(topic);
-  }
+  const kept = new Set(knownTopicNames(fileName));
   const out: Record<string, string> = {};
   for (const topic of kept) {
     if (topicSummaries[topic]) out[topic] = topicSummaries[topic];
@@ -29,11 +25,6 @@ export function topicSummariesExcept(fileName?: string): Record<string, string> 
 
 function pruneTopicSummaries() {
   const live = new Set(knownTopicNames());
-  for (const file of knowledgeStore) {
-    for (const chunk of file.knowledge) {
-      for (const topic of Object.keys(chunk.topics)) live.add(topic);
-    }
-  }
   topicSummaries = Object.fromEntries(
     Object.entries(topicSummaries).filter(([topic]) => live.has(topic)),
   );

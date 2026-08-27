@@ -1,34 +1,26 @@
+import { extractText as extractPdfjsText } from "unpdf";
+
 export function isPdfFile(mimetype: string, originalname: string): boolean {
   return mimetype === "application/pdf" || originalname.toLowerCase().endsWith(".pdf");
 }
 
-type PdfTextItem = { str?: string };
-
 export async function extractPdfText(
   buffer: Buffer,
 ): Promise<{ text: string; pages: number; method: "pdf-text" }> {
-  const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const doc = await getDocument({
-    data: new Uint8Array(buffer),
-    isEvalSupported: false,
-    useSystemFonts: true,
-  }).promise;
-
-  const pages: string[] = [];
-  for (let i = 1; i <= doc.numPages; i += 1) {
-    const page = await doc.getPage(i);
-    const content = await page.getTextContent();
-    const line = content.items
-      .map((item) => ("str" in item ? String((item as PdfTextItem).str ?? "") : ""))
-      .join(" ")
+  const { text, totalPages } = await extractPdfjsText(new Uint8Array(buffer), {
+    mergePages: false,
+  });
+  const pages = Array.isArray(text) ? text : [text];
+  const labeled = pages.map((page, i) => {
+    const line = String(page ?? "")
       .replace(/\s+/g, " ")
       .trim();
-    pages.push(line ? `--- Page ${i} ---\n${line}` : `--- Page ${i} ---`);
-  }
+    return line ? `--- Page ${i + 1} ---\n${line}` : `--- Page ${i + 1} ---`;
+  });
 
   return {
-    text: pages.join("\n\n").trim(),
-    pages: doc.numPages,
+    text: labeled.join("\n\n").trim(),
+    pages: totalPages,
     method: "pdf-text",
   };
 }

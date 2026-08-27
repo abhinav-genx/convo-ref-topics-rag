@@ -168,7 +168,7 @@ export default function App() {
         content: result.text
           ? fileKind === "transcript"
             ? `Uploaded ${kindLabel}: ${result.filename} (${result.dialogues?.length ?? 0} dialogues).\n\nRAG store now has ${result.topic_store?.length ?? result.topics?.length ?? 0} blocks across transcript files:\n${topicSummary || "(none)"}`
-            : `Uploaded ${kindLabel}: ${result.filename} (${result.pages} page(s), ${result.charCount} chars).\nScanned in 10,000-character slices against existing transcript topics.\n\n${knowledgeJson}`
+            : `Uploaded ${kindLabel}: ${result.filename} (${result.pages} page(s), ${result.charCount} chars).\nIndexed independently (new topics allowed; existing keys reused only when the subject matches).\n\n${knowledgeJson}`
           : `OCR ran on ${result.filename} but no text was found.`,
         createdAt: Date.now(),
       };
@@ -246,7 +246,7 @@ export default function App() {
                   <pre>
                     {fileKind === "transcript"
                       ? "Reading PDF and extracting topics..."
-                      : "Scanning reference PDF in 10,000-character slices..."}
+                      : "Reading reference PDF and extracting its own topics..."}
                   </pre>
                 </div>
               )}

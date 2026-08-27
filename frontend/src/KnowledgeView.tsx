@@ -38,7 +38,7 @@ export default function KnowledgeView({
         <div className="panel-label">Topics</div>
         <div className="sunken knowledge-list">
           {index.topics.length === 0 ? (
-            <div className="status">Upload a transcript PDF first.</div>
+            <div className="status">Upload a transcript or reference PDF.</div>
           ) : (
             index.topics.map((topic) => (
               <button

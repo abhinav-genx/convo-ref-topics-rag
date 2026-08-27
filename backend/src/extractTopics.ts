@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { askClaudeOpus } from "./openrouter.js";
 import { parseModelJson } from "./parseModelJson.js";
+import { reuseCatalogPrompt, TOPIC_KEY_RULES, topicKey } from "./topicIndex.js";
 
 export const MIN_TOPICS_PER_BLOCK = 9;
 
@@ -18,21 +19,22 @@ export type ExtractedTopics = {
 };
 
 function systemPrompt(existingTopics: string[], summaries: Record<string, string>): string {
-  const reuse = existingTopics.length
-    ? `Existing topic keys already in the knowledge base. If the subject is the same, you MUST reuse the exact key. Do not invent a synonym (not economic_outlook if economy exists, not realestate if real_estate exists):\n${existingTopics.join(", ")}`
-    : "No existing keys yet. Create new underscore keys.";
+  const reuse = reuseCatalogPrompt(existingTopics);
 
   const summaryBlock = Object.keys(summaries).length
-    ? `Current running summary for each existing topic. When you reuse a key, UPDATE that summary so it still covers earlier knowledge PLUS anything new in this slice. 2–4 factual sentences. Do not drop older facts.\n${JSON.stringify(summaries)}`
+    ? `Current running summary for each existing topic. When you reuse or create a key, UPDATE that summary so it still covers earlier knowledge PLUS anything new in this slice. 2–4 factual sentences. Do not drop older facts.\n${JSON.stringify(summaries)}`
     : "No running summaries yet. For each new topic, topic_summaries starts as a 2–4 sentence overview.";
 
   return `You extract a compact RAG index from a numbered transcript, in order.
+
+${TOPIC_KEY_RULES}
 
 What you are doing right now:
 - Read dialogues from 1 downward. Each line is one turn (split on full stops).
 - topics: short lowercase keys, one word or two/three words joined with underscores.
   Examples: "intro", "ice_breaking", "real_estate", "economy", "investing"
 - ${reuse}
+- Existing keys may have come from transcripts OR reference documents. Independent new transcript topics are expected when the conversation has its own subjects.
 - ${summaryBlock}
 - topic_details: an object with the SAME keys. Each value is one short sentence about THIS slice only.
   Example: { "economy": "they compared inflation vs wage growth this quarter" }
@@ -58,14 +60,6 @@ function parseJson(raw: string): unknown {
     throw new Error("Could not parse topics JSON");
   }
   return parsed;
-}
-
-function topicKey(raw: string): string {
-  return raw
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
 }
 
 function asTopicStrings(list: unknown): string[] {
@@ -135,7 +129,7 @@ async function extractWindow(
 }> {
   const numbered = dialogues.map((line, i) => `${i + 1}. ${line}`).join("\n");
   const raw = await askClaudeOpus(
-    `Extract ${MIN_TOPICS_PER_BLOCK} underscore topic keys plus topic_details and updated topic_summaries from this slice, then stop.\nReuse existing keys when the subject matches.\n\n${numbered}`,
+    `Extract ${MIN_TOPICS_PER_BLOCK} underscore topic keys plus topic_details and updated topic_summaries from this slice, then stop.\nReuse an existing key only when the subject matches. New independent keys are expected otherwise.\n\n${numbered}`,
     [{ role: "system", content: systemPrompt(existingTopics, summaries) }],
   );
 
